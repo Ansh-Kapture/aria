@@ -1,0 +1,63 @@
+# ── Credentials & secrets ─────────────────────────────────────────────────────
+.env
+*.json.key
+*service-account*.json
+*service_account*.json
+*-credentials.json
+*credentials*.json
+kapture-gemini*.json
+secrets/
+
+# ── ARIA runtime state & output ───────────────────────────────────────────────
+state/
+output/
+state/chroma/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+.env.local
+.env.*.local
+
+# ── Build & distribution ──────────────────────────────────────────────────────
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# ── Type checking & linting ───────────────────────────────────────────────────
+.mypy_cache/
+.ruff_cache/
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── ML model caches (sentence-transformers, cross-encoder) ───────────────────
+.cache/
+models/
