@@ -15,7 +15,12 @@ import asyncio
 import logging
 import sys
 import time
+import warnings
 from pathlib import Path
+
+# Suppress vertexai SDK deprecation warning that fires on every LLM call.
+# The deprecated API still works; removal is June 2026.
+warnings.filterwarnings("ignore", category=UserWarning, module="vertexai")
 
 # Configure logging before imports that may log at module level
 logging.basicConfig(
@@ -24,6 +29,16 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("aria.main")
+
+# Silence noisy third-party loggers
+for _noisy in (
+    "google_genai",           # AFC loop messages
+    "google_genai.models",    # AFC enabled spam
+    "huggingface_hub",        # unauthenticated hub warning
+    "sentence_transformers",  # device/load chatter
+    "numexpr",                # thread count info
+):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 
 def parse_args() -> argparse.Namespace:

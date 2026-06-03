@@ -53,6 +53,12 @@ class QualityEvaluator(BaseAgent):
         """Evaluate a synthesized section and return structured quality scores."""
         logger.info("[Evaluator] Scoring section for task %s", task.id)
 
+        # Truncate content so the prompt stays compact — the evaluator needs
+        # enough context to score the section, not the full synthesis text.
+        content_preview = synthesis.content[:2000]
+        if len(synthesis.content) > 2000:
+            content_preview += "\n... [truncated for evaluation]"
+
         citations_text = "\n".join(
             f"[{c.id}] {c.title}: {c.snippet[:100]}"
             for c in synthesis.citations
@@ -60,7 +66,7 @@ class QualityEvaluator(BaseAgent):
 
         prompt = (
             f"RESEARCH QUESTION: {task.question}\n\n"
-            f"SECTION CONTENT:\n{synthesis.content}\n\n"
+            f"SECTION CONTENT:\n{content_preview}\n\n"
             f"AVAILABLE CITATIONS:\n{citations_text or '(none)'}\n\n"
             "Score this research section on:\n"
             "1. factual_grounding (0-10): Are claims backed by the provided citations? "

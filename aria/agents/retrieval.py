@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import logging
 from typing import Optional
 
@@ -79,7 +78,7 @@ class RetrievalAgent(BaseAgent):
     async def run(
         self, task: SubTask, memory: SharedWorkingMemory
     ) -> RetrievalResult:
-        logger.info("[Retrieval] Starting task %s: %r", task.id, task.question[:80])
+        logger.info("[Retrieval] Starting task %s: %s", task.id, task.question)
 
         # Step 1: Generate HyDE hypothesis
         loop = asyncio.get_event_loop()

@@ -34,8 +34,16 @@ class DAGExecutor:
         """Execute the DAG and return {task_id: result} for all completed tasks."""
         self._semaphore = asyncio.Semaphore(self._max_parallel)
         results: dict[str, any] = {}
-        completed: set[str] = set()
         failed: set[str] = set()
+
+        # Pre-seed completed from any tasks already marked done (checkpoint resume).
+        # Without this, dependent tasks can't see their deps as satisfied and get
+        # logged as "stuck" even when the orchestrator already skipped them.
+        completed: set[str] = {
+            tid
+            for tid, node in dag.items()
+            if node.task.status in (TaskStatus.COMPLETED, TaskStatus.SKIPPED)
+        }
 
         # Topological execution loop
         max_rounds = len(dag) + 1  # safety: prevents infinite loops on bad graphs

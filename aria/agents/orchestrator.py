@@ -165,7 +165,7 @@ class OrchestratorAgent(BaseAgent):
                 elif replan.action == "rephrase" and replan.revised_question:
                     logger.info(
                         "[Orchestrator] Rephrasing task %s: %r → %r",
-                        task.id, task.question[:60], replan.revised_question[:60],
+                        task.id, task.question, replan.revised_question,
                     )
                     task.question = replan.revised_question
                 elif replan.action == "merge" and replan.merge_with:
@@ -383,10 +383,9 @@ class OrchestratorAgent(BaseAgent):
                     )
                 )
             dag = build_dag(tasks)
-            logger.info(
-                "[Orchestrator] Decomposed into %d tasks: %s",
-                len(dag), [t.question[:50] for t in tasks],
-            )
+            for t in tasks:
+                logger.info("[Orchestrator] Sub-task %s: %s", t.id, t.question)
+            logger.info("[Orchestrator] Decomposed into %d tasks", len(dag))
             return dag
         except (json.JSONDecodeError, KeyError) as exc:
             logger.error("[Orchestrator] Decomposition parse failed: %s", exc)

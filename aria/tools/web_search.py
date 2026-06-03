@@ -59,7 +59,10 @@ class WebSearchTool:
     async def _ddg_search(self, query: str) -> list[SearchResult]:
         await self._rate_limit()
         try:
-            from duckduckgo_search import DDGS
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                from duckduckgo_search import DDGS
 
             loop = asyncio.get_event_loop()
             raw = await loop.run_in_executor(

@@ -3,41 +3,35 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Optional
 
 from aria.providers.base import LLMProvider
 
 logger = logging.getLogger(__name__)
 
-# Gemini 2.x "thinking" models consume reasoning tokens inside max_output_tokens.
-# Any caller passing a small budget (e.g. 512 for a JSON answer) would leave
-# no room for actual output after ~500 thinking tokens. Apply a floor so every
-# call has enough headroom regardless of what the agent requested.
-_THINKING_MODEL_MIN_TOKENS = 4096
-_THINKING_MODEL_MARKERS = ("gemini-2.", "thinking")  # match "gemini-2.5-flash" etc.
+# Gemini 2.x thinking models burn reasoning tokens inside max_output_tokens.
+# Raise small budgets so there is always room for actual response text.
+_THINKING_MODEL_MIN_TOKENS = 8192
+_THINKING_MODEL_MARKERS = ("gemini-2.", "thinking")
 
 
 def _is_thinking_model(model: str) -> bool:
-    model_lower = model.lower()
-    return any(m in model_lower for m in _THINKING_MODEL_MARKERS)
+    return any(m in model.lower() for m in _THINKING_MODEL_MARKERS)
 
 
 class VertexAIProvider(LLMProvider):
-    """Google Vertex AI provider (Gemini models).
+    """Google Vertex AI provider via the vertexai SDK.
 
-    Accepts credentials in three ways (tried in order):
-    1. `service_account_json` string (raw JSON content)
-    2. `service_account_file` path to a JSON file on disk
-    3. Application Default Credentials (ADC) — works inside GCP or after
-       `gcloud auth application-default login`.
+    Credentials (tried in order):
+    1. service_account_json — raw JSON string
+    2. service_account_file — path to a .json file on disk
+    3. Application Default Credentials — works inside GCP or after
+       `gcloud auth application-default login`
 
     Thinking-model handling:
         Gemini 2.x models spend tokens on internal reasoning before writing
-        output. Those tokens count against `max_output_tokens`. A caller
-        requesting 512 tokens would exhaust the budget on thinking alone and
-        receive no text. This provider automatically raises small budgets to
-        _THINKING_MODEL_MIN_TOKENS (4096) for any matching model so every
-        agent always gets a usable response.
+        output; those tokens count against max_output_tokens. This provider
+        raises any budget below _THINKING_MODEL_MIN_TOKENS to ensure agents
+        always receive a usable response.
     """
 
     def __init__(
@@ -73,7 +67,6 @@ class VertexAIProvider(LLMProvider):
                 self._sa_file,
                 scopes=["https://www.googleapis.com/auth/cloud-platform"],
             )
-        # else: ADC
 
         vertexai.init(
             project=self._project,
@@ -93,8 +86,6 @@ class VertexAIProvider(LLMProvider):
         self._ensure_initialized()
         from vertexai.generative_models import GenerativeModel, GenerationConfig
 
-        # Gemini 2.x thinking models use reasoning tokens inside max_output_tokens.
-        # Raise small budgets so there's always room for actual response text.
         effective_max_tokens = max_tokens
         if _is_thinking_model(model) and max_tokens < _THINKING_MODEL_MIN_TOKENS:
             logger.debug(
@@ -116,18 +107,16 @@ class VertexAIProvider(LLMProvider):
 
         response = llm.generate_content(user)
 
-        # Handle finish_reason=MAX_TOKENS: try to extract partial text before raising.
         try:
             return response.text
         except ValueError:
-            # Attempt to pull any partial text from candidates
             try:
                 parts = response.candidates[0].content.parts
                 if parts:
                     partial = "".join(p.text for p in parts if hasattr(p, "text"))
                     if partial.strip():
                         logger.warning(
-                            "Model %s hit MAX_TOKENS — returning partial response (%d chars)",
+                            "Model %s hit MAX_TOKENS — partial response (%d chars)",
                             model, len(partial),
                         )
                         return partial
@@ -141,8 +130,8 @@ class VertexAIProvider(LLMProvider):
             raise RuntimeError(
                 f"Vertex AI model {model!r} returned no text "
                 f"(finish_reason={finish}). "
-                "If this is a thinking model, increase VERTEX_MODEL to a "
-                "non-thinking variant (e.g. gemini-1.5-pro) or check your quota."
+                "Switch to a non-thinking variant (e.g. gemini-1.5-pro) "
+                "or increase token limits."
             ) from None
 
     def provider_name(self) -> str:

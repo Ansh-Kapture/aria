@@ -69,9 +69,20 @@ class Settings(BaseSettings):
     output_dir: str = "./output"
     state_dir: str = "./state"
 
+    def _resolved_provider(self) -> str:
+        """Resolve 'auto' to the actual provider name based on credentials."""
+        p = self.llm_provider.lower()
+        if p != "auto":
+            return p
+        if self.vertex_project:
+            return "vertexai"
+        if self.openai_api_key:
+            return "openai"
+        return "anthropic"
+
     def get_orchestrator_model(self) -> str:
         """Return the correct main model name for the active provider."""
-        p = self.llm_provider.lower()
+        p = self._resolved_provider()
         if p in ("openai", "openai_compatible"):
             return self.openai_model
         if p == "vertexai":
@@ -80,7 +91,7 @@ class Settings(BaseSettings):
 
     def get_fast_model(self) -> str:
         """Return the correct lightweight model name for the active provider."""
-        p = self.llm_provider.lower()
+        p = self._resolved_provider()
         if p in ("openai", "openai_compatible"):
             return self.openai_fast_model
         if p == "vertexai":

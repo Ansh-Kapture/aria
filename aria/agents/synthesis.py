@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from typing import Optional
 
 from aria.agents.base import BaseAgent
 from aria.config import Settings
 from aria.schemas.critique import ConflictResolution
-from aria.schemas.retrieval import Citation, RetrievalResult
+from aria.schemas.retrieval import RetrievalResult
 from aria.schemas.synthesis import SynthesisResult
 from aria.schemas.task import SubTask
 
@@ -48,7 +47,7 @@ class SynthesisAgent(BaseAgent):
         dependency_context: str = "",
     ) -> SynthesisResult:
         """Synthesize retrieval results into a report section."""
-        logger.info("[Synthesis] Synthesizing task %s: %r", task.id, task.question[:80])
+        logger.info("[Synthesis] Synthesizing task %s: %s", task.id, task.question)
 
         # Build citation map: id → Citation
         citation_map = {c.id: c for c in retrieval_result.citations}
